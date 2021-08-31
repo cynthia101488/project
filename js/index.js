@@ -1,7 +1,7 @@
 const elemPage = document.querySelector('#Page');
 const elemLoad = document.querySelector('#Load');
+let data = '';
 let currentIndex = 0;
-let prevIndex = 0;
 
 setInit();
 getData();
@@ -9,19 +9,20 @@ setEvent();
 
 function setInit() {
   elemLoad.innerHTML = `<div class="init__body">
-                          <p class="init__text"></p>資料下載中...請稍後！</p>
-                      </div>`
+                          <img src="https://illinoislock.com/assets/images/loading.gif" alt="">
+                          <p class="init__text">資料下載中...請稍後！</p>
+                        </div>`
 }
 
 function getData() {
   const api = 'https://data.coa.gov.tw/Service/OpenData/ODwsv/ODwsvTravelFood.aspx'
   fetch(api)
   .then(res => res.json())
-  .then(data => {
-    localStorage.setItem('food_list', JSON.stringify(data));
+  .then(originData => {
+    data = originData;
+    setPage(originData);
+    setTemplate(currentIndex);
     elemLoad.style = 'display:none';
-    setPage(data);
-    setTemplate(currentIndex, prevIndex);
   })
   .catch(err => {
     if (err) {
@@ -40,11 +41,11 @@ function setPage(data) {
   }
   });
   elemPage.innerHTML = pageCode;
+  elemPage.children[currentIndex].classList.add('js-nav__page');
 }
 
-function setTemplate(startNum, index) {
+function setTemplate(startNum) {
   const elemTable = document.querySelector('#Table');
-  const data = JSON.parse(localStorage.getItem('food_list'));
   let str = '';
   let len = startNum + 10;
   for (let i = startNum; i < len && data[i]; i++) {
@@ -57,17 +58,15 @@ function setTemplate(startNum, index) {
                   <img class="image-hidden" src="${data[i].PicURL}" alt="${data[i].Name}">
                 </div>    
               </td>
-              <td class="table__item">${data[i].Url ? `<a href="${data[i].Url}" target="_blank">${data[i].Name}</a>` : `${data[i].Name}`}</td>
-              <td class="table__item text-wrap">${textLimit(data[i].HostWords)}</td>
+              <td class="table__item text-overflow">${data[i].Url ? `<a href="${data[i].Url}" target="_blank">${data[i].Name}</a>` : `${data[i].Name}`}</td>
+              <td class="table__item">${textLimit(data[i].HostWords)}</td>
             </tr>`;
   }
   elemTable.innerHTML = str;
-  elemPage.children[index].classList.remove('js-nav__page');
-  elemPage.children[currentIndex].classList.add('js-nav__page');
 }
 
 function changeBgColor(index) {
-  return index % 2 == 0 ? '' : 'js-table__ls';
+  return index % 2 === 0 ? '' : 'js-table__ls';
 }
 
 function textLimit(text) {
@@ -81,9 +80,16 @@ function setEvent() {
 
 function doClick(e) {
   const self = e.target;
-  if (self.nodeName == 'BUTTON') {
-    prevIndex = currentIndex;
-    currentIndex = self.dataset.id;
-    setTemplate(self.dataset.id * 10, prevIndex);
+  if (self.nodeName === 'BUTTON') {
+    const prevIndex = currentIndex;
+    currentIndex = parseInt(self.dataset.id);
+    const startIndex = currentIndex * 10;
+    setTemplate(startIndex);
+    setBtn(prevIndex)
   }
+}
+
+function setBtn(index) {
+  elemPage.children[currentIndex].classList.add('js-nav__page');
+  elemPage.children[index].classList.remove('js-nav__page');
 }
