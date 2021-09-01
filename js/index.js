@@ -3,70 +3,63 @@ const elemLoad = document.querySelector('#Load');
 let arr = [];
 let currentIndex = 0;
 
-setInit();
 getData();
 setEvent();
-
-function setInit() {
-  elemLoad.innerHTML = `<div class="init__body">
-                          <img src="https://illinoislock.com/assets/images/loading.gif" alt="">
-                          <p class="init__text">資料下載中...請稍後！</p>
-                        </div>`
-}
 
 function getData() {
   const api = 'https://data.coa.gov.tw/Service/OpenData/ODwsv/ODwsvTravelFood.aspx'
   fetch(api)
   .then(res => res.json())
   .then(data => {
-    dataSplit(data);
-    setPage(data);
+    arr = dataSplit(data);
+    setPage(arr);
     setTemplate(currentIndex);
-    elemLoad.style = 'display:none';
   })
   .catch(err => {
     if (err) {
       alert('資料來源有誤!');
     }
   })
+  .finally(() => {
+    elemLoad.style = 'display:none';
+  });
 }
 
 function dataSplit(data) {
-  for (let i = 0, len = data.length; i < len; i += 10) {
-    arr.push(data.slice(i, i + 10));
+  const rowSize = 10;
+  for (let i = 0, len = data.length; i < len; i += rowSize) {
+    arr.push(data.slice(i, i + rowSize));
   }
+  return arr;
 }
 
-function setPage(data) {
+function setPage(arr) {
   let pageCode = '';
-  let i = 0;
-  data.forEach((item, index) => {
-    if (index % 10 === 0) {
-      pageCode += `<button class="nav__page" type="button" data-id="${i}">${i + 1}</button>`;
-      i += 1;
-    }
-  });
+  for (let i = 0, len = arr.length; i < len; i++) {
+    pageCode += `<button class="nav__page" type="button" data-id="${i}">${i + 1}</button>`;  
+  }
   elemPage.innerHTML = pageCode;
   elemPage.children[currentIndex].classList.add('js-nav__page');
 }
 
-function setTemplate(startNum) {
+function setTemplate(index) {
   const elemTable = document.querySelector('#Table');
   let str = '';
-  for (let i = 0; i < arr[startNum].length; i++) {
+  const rowStartIndex = index * 10 + 1;
+  arr[index].forEach((item, i) => {
     str += `<tr class="table__ls ${changeBgColor(i)}">
-              <td class="table__item text-center text-gray">${i + 1}</td>
-              <td class="table__item">${arr[startNum][i].City}</td>
+              <td class="table__item text-center text-gray">${rowStartIndex + i}</td>
+              <td class="table__item">${item.City}</td>
               <td class="table__item">
                 <div class="img__inner">
-                  <img class="image" src="${arr[startNum][i].PicURL}" alt="${arr[startNum][i].Name}">
-                  <img class="image-hidden" src="${arr[startNum][i].PicURL}" alt="${arr[startNum][i].Name}">
+                  <img class="image" src="${item.PicURL}" alt="${item.Name}">
+                  <img class="image-hidden" src="${item.PicURL}" alt="${item.Name}">
                 </div>    
               </td>
-              <td class="table__item text-overflow">${arr[startNum][i].Url ? `<a href="${arr[startNum][i].Url}" target="_blank">${arr[startNum][i].Name}</a>` : `${arr[startNum][i].Name}`}</td>
-              <td class="table__item">${textLimit(arr[startNum][i].HostWords)}</td>
+              <td class="table__item text-overflow">${item.Url ? `<a href="${item.Url}" target="_blank">${item.Name}</a>` : `${item.Name}`}</td>
+              <td class="table__item">${textLimit(item.HostWords)}</td>
             </tr>`;
-  }
+  });
   elemTable.innerHTML = str;
 }
 
